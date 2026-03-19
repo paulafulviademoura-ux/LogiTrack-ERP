@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "An employee of the company",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the employee" },
+        "name": { "type": "string", "description": "Full name of the employee" },
+        "cpf": { "type": "string", "description": "CPF of the employee" },
+        "email": { "type": "string", "description": "Corporate email" },
+        "role": { "type": "string", "description": "Job role" },
+        "cnhNumber": { "type": "string", "description": "CNH number" },
+        "cnhExpiration": { "type": "string", "format": "date", "description": "CNH expiration date" },
+        "cnhCategory": { "type": "string", "description": "CNH categories" },
+        "cnhPdfUrl": { "type": "string", "description": "URL to the CNH PDF document" },
+        "whatsapp": { "type": "string", "description": "WhatsApp contact number" },
+        "status": { "type": "string", "enum": ["active", "inactive", "vacation"], "description": "Current status" },
+        "photoUrl": { "type": "string", "description": "URL to the employee's photo" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" },
+        "uid": { "type": "string", "description": "Owner UID" }
+      },
+      "required": ["name", "cpf", "email", "role", "uid"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "A vehicle in the fleet",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier" },
+        "plate": { "type": "string", "description": "License plate" },
+        "type": { "type": "string", "enum": ["Carreta", "Cavalo", "Moto", "Carro"], "description": "Vehicle type" },
+        "model": { "type": "string", "description": "Vehicle model" },
+        "brand": { "type": "string", "description": "Vehicle brand" },
+        "year": { "type": "integer", "description": "Manufacturing year" },
+        "color": { "type": "string", "description": "Vehicle color" },
+        "renavam": { "type": "string", "description": "RENAVAM number" },
+        "chassi": { "type": "string", "description": "Chassis number" },
+        "status": { "type": "string", "enum": ["active", "maintenance", "inactive"], "description": "Current status" },
+        "photoUrl": { "type": "string", "description": "URL to vehicle photo" },
+        "documentUrl": { "type": "string", "description": "URL to CRLV PDF" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" },
+        "uid": { "type": "string", "description": "Owner UID" }
+      },
+      "required": ["plate", "model", "brand", "uid"]
+    },
+    "Fleet": {
+      "title": "Fleet",
+      "description": "A fleet unit consisting of a driver and two vehicles",
+      "type": "object",
+      "properties": {
+        "fleetNumber": { "type": "string", "description": "4-digit fleet number (Primary Key)" },
+        "employeeId": { "type": "string", "description": "ID of the associated employee" },
+        "cavaloId": { "type": "string", "description": "ID of the associated truck head (Cavalo)" },
+        "carretaId": { "type": "string", "description": "ID of the associated trailer (Carreta)" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Fleet status" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "uid": { "type": "string", "description": "Owner UID" }
+      },
+      "required": ["fleetNumber", "employeeId", "cavaloId", "carretaId", "uid"]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Collection of employees"
+    },
+    "/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Collection of vehicles"
+    },
+    "/fleets/{fleetNumber}": {
+      "schema": "Fleet",
+      "description": "Collection of fleets"
+    }
+  }
+}

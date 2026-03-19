@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: employees
+    // Document ID: auto-generated or employeeId
+    // Fields:
+    //   - name: string (required)
+    //   - cpf: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required)
+    //   - cnhNumber: string (optional)
+    //   - cnhExpiration: string (optional, date format)
+    //   - cnhCategory: string (optional)
+    //   - cnhPdfUrl: string (optional, url format)
+    //   - whatsapp: string (optional)
+    //   - status: string (required, enum: active, inactive, vacation)
+    //   - photoUrl: string (optional, url format)
+    //   - createdAt: timestamp (required)
+    //   - updatedAt: timestamp (required)
+    //   - uid: string (required, owner)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "paulafulviademoura@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidEmployee(data) {
+      return hasRequiredFields(['name', 'cpf', 'email', 'role', 'status', 'uid', 'createdAt', 'updatedAt']) &&
+             hasOnlyAllowedFields(['name', 'cpf', 'email', 'role', 'cnhNumber', 'cnhExpiration', 'cnhCategory', 'cnhPdfUrl', 'whatsapp', 'status', 'photoUrl', 'uid', 'createdAt', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.cpf is string && data.cpf.size() >= 11 && data.cpf.size() <= 14 &&
+             isValidEmail(data.email) &&
+             data.role is string && data.role.size() > 0 &&
+             data.status in ['active', 'inactive', 'vacation'] &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             (data.photoUrl == null || data.photoUrl == "" || isValidUrl(data.photoUrl)) &&
+             (data.cnhPdfUrl == null || data.cnhPdfUrl == "" || isValidUrl(data.cnhPdfUrl)) &&
+             (data.whatsapp == null || data.whatsapp is string);
+    }
+
+    function isValidVehicle(data) {
+      return hasRequiredFields(['plate', 'type', 'model', 'brand', 'status', 'uid', 'createdAt', 'updatedAt']) &&
+             hasOnlyAllowedFields(['plate', 'type', 'model', 'brand', 'year', 'color', 'renavam', 'chassi', 'status', 'photoUrl', 'documentUrl', 'uid', 'createdAt', 'updatedAt']) &&
+             data.plate is string && data.plate.size() >= 7 && data.plate.size() <= 8 &&
+             data.type in ['Carreta', 'Cavalo', 'Moto', 'Carro'] &&
+             data.model is string && data.model.size() > 0 &&
+             data.brand is string && data.brand.size() > 0 &&
+             data.status in ['active', 'maintenance', 'inactive'] &&
+             (data.uid == request.auth.uid || isAdmin()) &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             (data.photoUrl == null || data.photoUrl == "" || isValidUrl(data.photoUrl)) &&
+             (data.documentUrl == null || data.documentUrl == "" || isValidUrl(data.documentUrl));
+    }
+
+    match /employees/{employeeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidEmployee(request.resource.data);
+      allow update: if isAuthenticated() && isValidEmployee(request.resource.data) && (isDocOwner() || isAdmin());
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidVehicle(request.resource.data);
+      allow update: if isAuthenticated() && isValidVehicle(request.resource.data) && (isDocOwner() || isAdmin());
+      allow delete: if isAuthenticated() && (isDocOwner() || isAdmin());
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}
